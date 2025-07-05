@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Trading Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Calm Harmony (Neutral grays/slates with soft blue, green, and red accents) -->
+    <!-- Application Structure Plan: The application uses a tabbed navigation structure (Foundations, Technical Analysis, Fundamental Analysis) to break down the dense report into manageable sections. This non-linear, task-oriented design allows users to explore topics based on interest rather than following the report's linear order. The "Technical Analysis" section is the interactive core, with its own sub-navigation for Candlesticks, Indicators, and Patterns. This modular approach is chosen to transform passive reading into an active, exploratory learning experience, which is more effective for complex, practical subjects like trading. -->
+    <!-- Visualization & Content Choices: Report Info -> Candlestick Patterns. Goal -> Organize & Inform. Viz -> Interactive cards with filterable categories (Bullish/Bearish/Continuation). A CSS-drawn visual of each candle accompanies its text description. Interaction -> User filters and clicks to view details. Justification -> Visually engaging and allows focused learning on one pattern at a time. Library -> HTML/CSS. Report Info -> Technical Indicators. Goal -> Compare & Inform. Viz -> An interactive price chart. Interaction -> Buttons to toggle indicators (MAs, Bollinger Bands, RSI, Stochastic, MACD) on/off the chart. Justification -> Demonstrates how indicators are used in a real-world context, which is superior to static text. Library -> Chart.js. Report Info -> Trading Strategies. Goal -> Inform & Guide. Viz -> Accordions for Buy/Sell strategies, a table for summary, and a pro tip. Interaction -> Click to expand strategy details. Justification -> Provides actionable advice in an easily digestible format. Report Info -> Chart Patterns. Goal -> Inform. Viz -> Text and simplified CSS visuals. Justification -> Explains key patterns visually. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-button { transition: all 0.3s ease; }
+        .nav-button.active { background-color: #3b82f6; color: white; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .indicator-button.active { background-color: #10b981; color: white; border-color: #10b981; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 350px; max-height: 450px; }
+        @media (min-width: 768px) { .chart-container { height: 450px; } }
+        .candle-body { position: relative; width: 40px; }
+        .candle-wick { position: absolute; left: 50%; transform: translateX(-50%); width: 2px; background-color: #4b5563; }
+
+        /* Modal specific styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header class="sticky top-0 z-50 bg-slate-900 text-white shadow-lg py-3">
+        <div class="container mx-auto flex items-center justify-between px-4">
+            <div class="flex items-center space-x-4">
+                <img src="https://static.vecteezy.com/system/resources/thumbnails/000/609/739/small/3-19.jpg" alt="Website Logo" class="h-10 w-10 rounded-full">
+                <h1 class="text-2xl font-bold">MarketMentor</h1>
+            </div>
+            <nav class="flex items-center space-x-2">
+                <button data-target="foundations" class="nav-button active text-sm md:text-base font-medium py-2 px-3 rounded-md hover:bg-slate-700 transition-colors">Foundations</button>
+                <button data-target="technical" class="nav-button text-sm md:text-base font-medium py-2 px-3 rounded-md hover:bg-slate-700 transition-colors">Technical Analysis</button>
+                <button data-target="fundamental" class="nav-button text-sm md:text-base font-medium py-2 px-3 rounded-md hover:bg-slate-700 transition-colors">Fundamental Analysis</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <div class="text-center mb-8 mt-4">
+            <p class="text-slate-600">Your visual and interactive path to mastering the markets.</p>
+            <div class="mt-4 text-slate-500 text-sm">
+                Total Visitors: <span id="visitor-count" class="font-semibold text-slate-700">Loading...</span>
+            </div>
+        </div>
+
+        <main>
+            <!-- Foundations Section -->
+            <section id="foundations" class="content-section active space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 class="text-2xl font-bold mb-3 text-slate-900">What is Trading?</h2>
+                    <p class="text-slate-700 leading-relaxed" id="foundations-what-is-trading"></p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                         <h3 class="text-xl font-bold mb-3 text-slate-900">Market Types</h3>
+                         <ul id="foundations-market-types" class="space-y-2 list-disc list-inside text-slate-700"></ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-sm">
+                         <h3 class="text-xl font-bold mb-3 text-slate-900">Key Order Types</h3>
+                         <ul id="foundations-order-types" class="space-y-2 list-disc list-inside text-slate-700"></ul>
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 class="text-2xl font-bold mb-3 text-slate-900">Laying the Groundwork</h2>
+                    <p class="text-slate-700 leading-relaxed mb-4">Before engaging in any trading activity, a thorough self-assessment is essential. This involves defining clear financial goals, understanding one's risk tolerance, and establishing a suitable time horizon for investments.</p>
+                    <div id="foundations-groundwork" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- Technical Analysis Section -->
+            <section id="technical" class="content-section">
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold text-slate-900">Technical Analysis: Decoding Price Action</h2>
+                    <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Technical analysis evaluates assets by reviewing historical price and volume. The core idea is that past trading activity and market psychology can predict future price movements. This section provides interactive tools to explore the key components of technical analysis.</p>
+                </div>
+
+                <!-- Sub-navigation for Technical Analysis -->
+                <div class="flex justify-center border-b border-slate-300 mb-6">
+                    <button class="tech-nav-button py-3 px-6 font-medium text-blue-600 border-b-2 border-blue-600" data-tech-target="candlesticks">Candlestick Explorer</button>
+                    <button class="tech-nav-button py-3 px-6 font-medium text-slate-500" data-tech-target="indicators">Indicator Playground</button>
+                    <button class="tech-nav-button py-3 px-6 font-medium text-slate-500" data-tech-target="patterns">Chart Patterns</button>
+                    <button class="tech-nav-button py-3 px-6 font-medium text-slate-500" data-tech-target="strategies">Trading Strategies</button>
+                </div>
+
+                <!-- Candlestick Explorer -->
+                <div id="candlesticks-content" class="tech-content-section">
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <div class="flex-shrink-0">
+                             <p class="font-semibold mb-2 text-slate-700">Filter Patterns:</p>
+                            <div class="flex space-x-2">
+                                <button class="candle-filter-btn bg-blue-500 text-white py-2 px-4 rounded-md" data-filter="all">All</button>
+                                <button class="candle-filter-btn bg-white text-slate-700 border border-slate-300 py-2 px-4 rounded-md" data-filter="bullish">Bullish</button>
+                                <button class="candle-filter-btn bg-white text-slate-700 border border-slate-300 py-2 px-4 rounded-md" data-filter="bearish">Bearish</button>
+                                <button class="candle-filter-btn bg-white text-slate-700 border border-slate-300 py-2 px-4 rounded-md" data-filter="continuation">Continuation</button>
+                            </div>
+                        </div>
+                        <div class="flex-grow bg-blue-50 p-4 rounded-lg text-blue-800">
+                             <p><strong class="font-semibold">How to Use:</strong> Select a filter to view specific pattern types. Click on any pattern card below to see a visual representation and detailed explanation of its formation, interpretation, and trading signal.</p>
+                        </div>
+                    </div>
+                    <div id="candlestick-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+                
+                <!-- Indicator Playground -->
+                <div id="indicators-content" class="tech-content-section hidden">
+                    <div class="text-center mb-4">
+                        <div class="bg-green-50 p-4 rounded-lg text-green-800 inline-block">
+                             <p><strong class="font-semibold">How to Use:</strong> This is an- interactive chart. Click the buttons below to toggle various technical indicators on and off. Observe how they interact with the price action and read the dynamic explanation for each.</p>
+                        </div>
+                    </div>
+                    <div class="chart-container bg-white rounded-lg shadow p-4">
+                        <canvas id="indicatorChart"></canvas>
+                    </div>
+                     <div class="chart-container bg-white rounded-lg shadow p-4 mt-4" id="oscillator-container" style="height: 150px; display: none;">
+                        <canvas id="oscillatorChart"></canvas>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2 mt-4">
+                        <button class="indicator-button border border-slate-300 py-2 px-4 rounded-md" data-indicator="ema_cross">EMA Crossover</button>
+                        <button class="indicator-button border border-slate-300 py-2 px-4 rounded-md" data-indicator="bollinger">Bollinger Bands</button>
+                        <button class="indicator-button border border-slate-300 py-2 px-4 rounded-md" data-indicator="rsi">RSI</button>
+                        <button class="indicator-button border border-slate-300 py-2 px-4 rounded-md" data-indicator="stochastic">Stochastic Oscillator</button>
+                        <button class="indicator-button border border-slate-300 py-2 px-4 rounded-md" data-indicator="macd">MACD</button>
+                    </div>
+                    <div id="indicator-explanation" class="mt-6 bg-white p-6 rounded-lg shadow-sm min-h-[100px]">
+                        <p class="text-slate-600">Select an indicator to see its explanation.</p>
+                    </div>
+                </div>
+
+                <!-- Chart Patterns -->
+                <div id="patterns-content" class="tech-content-section hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="chart-patterns-grid"></div>
+                </div>
+
+                <!-- Trading Strategies -->
+                <div id="strategies-content" class="tech-content-section hidden">
+                    <div class="bg-blue-50 p-4 rounded-lg text-blue-800 mb-6 text-center">
+                        <p><strong class="font-semibold">How to Use:</strong> Explore popular trading strategies for both buying and selling. Understand the entry/exit signals and how indicators support these decisions. The summary table provides quick reference for different market situations.</p>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Popular Trading Strategies</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                            <h4 class="text-xl font-bold text-green-600 mb-3">🟢 BUY STRATEGIES</h4>
+                            <div id="buy-strategies-accordion" class="space-y-3"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                            <h4 class="text-xl font-bold text-red-600 mb-3">🔴 SELL STRATEGIES</h4>
+                            <div id="sell-strategies-accordion" class="space-y-3"></div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Summary: When to Buy or Sell?</h3>
+                    <div class="bg-white p-6 rounded-lg shadow-sm overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Market Situation</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Strategy</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-table-body" class="bg-white divide-y divide-slate-200">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-sm mt-6">
+                        <h4 class="text-xl font-bold text-slate-900 mb-3">🚀 Pro Tip:</h4>
+                        <p class="text-slate-700" id="pro-tip"></p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Fundamental Analysis Section -->
+            <section id="fundamental" class="content-section space-y-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold text-slate-900">Fundamental Analysis: Understanding Underlying Value</h2>
+                    <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Fundamental analysis evaluates an asset's intrinsic value by examining economic and financial factors. It seeks to determine "what to buy" by identifying strong, potentially undervalued assets. This section outlines the key components of this approach.</p>
+                </div>
+                <div id="fundamental-accordion" class="space-y-3"></div>
+            </section>
+        </main>
+
+    </div>
+
+    <!-- Feedback Button -->
+    <button id="feedback-button" class="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors">
+        Give Feedback
+    </button>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-feedback-modal">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-slate-900">Your Feedback Matters!</h2>
+            <p class="text-slate-700 mb-4">We'd love to hear your thoughts on this interactive trading guide. Your feedback helps us improve!</p>
+            <textarea id="feedback-text" class="w-full p-3 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="6" placeholder="Type your feedback here..."></textarea>
+            <button id="submit-feedback" class="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">Submit Feedback</button>
+            <p class="text-sm text-red-600 mt-2">Note: For security reasons, direct email sending from the browser is not possible. Your feedback will be logged to the console.</p>
+        </div>
+    </div>
+
+    <footer class="bg-slate-800 text-slate-300 py-8 px-4 mt-12">
+        <div class="container mx-auto text-center text-sm space-y-4">
+            <p><strong>Disclaimer:</strong> All content provided on this website is strictly for educational and informational purposes only. We do not provide any investment, financial, or trading advice.</p>
+            <p>Trading and investing in financial markets involve significant risk and may not be suitable for all individuals. You are solely responsible for your investment decisions. Always do your own research (DYOR), consult with a certified financial advisor, and make informed choices.</p>
+            <p>This platform and its creators are not liable for any financial loss, direct or indirect, incurred as a result of using the information shared here.</p>
+            <p>Learn smart. Trade responsibly. Enjoy the journey! 🚀📈</p>
+            <p class="mt-6">Built and developed by Dnyaneshwar Kankale, all rights reserved &copy; <span id="current-year"></span></p>
+        </div>
+    </footer>
+
+<script>
+// Data for the trading guide content
+const data = {
+    foundations: {
+        what_is_trading: "Trading in financial markets involves the systematic methodology of buying and selling securities with the aim of generating profits. It is a dynamic activity based on predefined rules and criteria that guide decision-making. The cornerstone of successful trading lies in establishing a strategy based on objective data and analysis, adhering to it diligently, and periodically re-evaluating and adjusting it as market conditions or individual goals evolve.",
+        market_types: [
+            "<strong>Stock Markets:</strong> Platforms for trading ownership shares of companies.",
+            "<strong>Bond Markets:</strong> Where investors buy portions of company or government debt.",
+            "<strong>Commodities:</strong> Markets for raw materials like oil and gold.",
+            "<strong>Foreign Exchange (FOREX):</strong> The global market for trading currencies.",
+            "<strong>Derivatives (Options/Futures):</strong> Complex products whose value is derived from an underlying asset."
+        ],
+        order_types: [
+            "<strong>Market Order:</strong> An instruction to buy or sell a security immediately at the best available current price. Guarantees execution, but not price.",
+            "<strong>Limit Order:</strong> An order to buy or sell a security at a specified price or better. Guarantees price, but not necessarily execution.",
+            "<strong>Stop Order (Stop-Loss):</strong> Becomes a market order once a specific price is reached. Used to limit losses or protect profits."
+        ],
+        groundwork: [
+            { title: "Financial Goals", content: "Clearly articulated goals provide direction for trading decisions, from short-term capital appreciation to long-term wealth accumulation." },
+            { title: "Risk Tolerance", content: "An individual's ability and willingness to withstand potential losses. Profiles range from conservative (risk-averse) to aggressive (risk-seeking)." },
+            { title: "Time Horizon", content: "The intended duration of an investment. Strategies align with different time frames: Scalping (seconds), Day Trading (intraday), Swing Trading (days/weeks), and Position Trading (weeks/months)." }
+        ]
+    },
+    candlesticks: [
+        { name: "Hammer", type: "bullish", formation: "Small body, long lower wick (2-3x body length), little to no upper wick. Color (green/white) indicates stronger signal.", interpretation: "Sign of exhaustion in a downtrend. Sellers pushed price lower, but buyers resisted, closing near or above open.", signal: "Possible bullish reversal. Wait for further bullish confirmation (e.g., a green candle closing above the Hammer's open to its right)." },
+        { name: "Inverse Hammer", type: "bullish", formation: "Small body, long upper wick, little to no lower wick.", interpretation: "Bulls gained control early, pushing price higher after a downtrend. Bears couldn't maintain downturn.", signal: "Possible shift in momentum to the upside, signaling a bullish reversal." },
+        { name: "Bullish Engulfing", type: "bullish", formation: "First is a red/black bearish candle, completely engulfed by a larger green/white bullish candle.", interpretation: "Buyers entered strongly, pushing price up from previous close, outweighing sellers.", signal: "Strong buying pressure; price closes above previous high, indicating potential uptrend. Opportunity to take long positions." },
+        { name: "Piercing Line", type: "bullish", formation: "Red/black bearish candle followed by green/white bullish candle. Bull candle opens with a gap down but closes above the bear candle's midpoint.", interpretation: "Bears initially in control, but bulls took over halfway through the second session.", signal: "Indicates a potential market reversal from bearish to bullish." },
+        { name: "Morning Star", type: "bullish", formation: "Three-candle pattern: long red/black candle, followed by a small-bodied doji/spinning top (gaps on open/close), then a long green/white bullish candle.", interpretation: "Sellers couldn't continue the downtrend after initial push. Indecision, then buyers take over.", signal: "Signals a potential market reversal from a downtrend to an uptrend." },
+        { name: "Three White Soldiers", type: "bullish", formation: "Three consecutive long green/white bullish candles after a downtrend. Each candle closes higher than the previous, with small or no upper wicks.", interpretation: "Strong and growing buying momentum.", signal: "A potent bullish signal that a downtrend is likely reversing into an uptrend." },
+
+        { name: "Hanging Man", type: "bearish", formation: "Small body, long lower wick, little to no upper wick. Appears after an uptrend.", interpretation: "Sellers drove price down, but buyers pushed it back up. Buyers could not sustain the surge.", signal: "Possible shift in momentum to the downside, indicating a potential reversal from an uptrend to a downtrend." },
+        { name: "Shooting Star", type: "bearish", formation: "Candle body at the bottom, long upper wick, little to no lower wick. Appears after an uptrend.", interpretation: "Sellers returned, beating an early continuation of the advance. Buyers overpowered.", signal: "Signals a possible bearish reversal from an uptrend." },
+        { name: "Bearish Engulfing", type: "bearish", formation: "Green/white bullish candle completely engulfed by a larger red/black bearish candle.", interpretation: "After bullish candle, rapid shift to bearish control. Market opens higher but plummets.", signal: "Strong selling pressure; supply increases, demand decreases, signaling potential start of a downtrend." },
+        { name: "Dark Cloud Cover", type: "bearish", formation: "Green/white bullish candle followed by a red/black bearish candle that opens above the green candle's high but closes below its midpoint.", interpretation: "Strong bearish momentum takes over after initial bullishness, indicating a potential reversal.", signal: "Signals a potential bearish reversal from an uptrend. Wait for further bearish confirmation." },
+        { name: "Tweezer Tops", type: "bearish", formation: "Two-candle pattern: first is green/white bullish, second is red/black bearish. Both have short bodies with extended upper wicks leveled with each other.", interpretation: "Buyers attempted to push market to new highs twice but failed. Market slid back to first period's open on second candle.", signal: "Indicates a momentum shift and a potential downtrend." },
+        { name: "Evening Star", type: "bearish", formation: "Three-candle pattern: green/white bullish candle, followed by a small-bodied doji/spinning top (gaps on open/close), then a red/black bearish candle.", interpretation: "Market surge continues in first session, stalls in second. By third, retracement begins as traders close long positions and sellers open short positions.", signal: "Signals a potential market reversal towards a downtrend." },
+        { name: "Three Black Crows", type: "bearish", formation: "Three consecutive long red/black bearish candles after an uptrend. Each candle closes lower than the previous, with small or no lower wicks.", interpretation: "Strong and growing selling momentum.", signal: "A strong indication that an uptrend will reverse into a downtrend." },
+
+        { name: "Doji", type: "continuation", formation: "Open and close prices are virtually the same, forming a cross or plus sign. Can have long or short wicks.", interpretation: "Indecision in the market. Buyers and sellers are in balance, with neither gaining control.", signal: "Often signals a pause in the current trend; wait for confirmation of direction. Can also precede reversals." },
+        { name: "Spinning Top", type: "continuation", formation: "Small body (green or red) with long upper and lower wicks.", interpretation: "Indicates indecision and volatility. Similar to Doji but with a slightly larger body, showing some price movement but ultimately a close near the open.", signal: "Suggests a period of consolidation. Wait for a breakout to confirm the next direction." },
+        { name: "Inside Bar", type: "continuation", formation: "A smaller candle (inside bar) that is completely contained within the high and low range of the previous larger candle (mother bar).", interpretation: "Represents consolidation and decreased volatility. The market is pausing before a potential move.", signal: "Wait for a breakout above the high or below the low of the mother bar to enter a trade in the direction of the breakout." },
+        { name: "Flags & Pennants", type: "continuation", formation: "Small, compact patterns that form after a sharp, almost vertical price movement. Flags are rectangular, pennants are triangular.", interpretation: "Short pauses in a strong trend, indicating consolidation before the trend continues.", signal: "Enter a trade in the direction of the prior trend when price breaks out of the flag or pennant pattern." }
+    ],
+    indicators: {
+        ema_cross: { title: "EMA Crossover", description: "The Exponential Moving Average (EMA) Crossover strategy uses two EMAs: one short-term and one long-term. A 'Golden Cross' occurs when the short-term EMA crosses ABOVE the long-term EMA, signaling a potential BUY opportunity. A 'Death Cross' occurs when the short-term EMA crosses BELOW the long-term EMA, signaling a potential SELL opportunity. This method helps identify trend changes." },
+        bollinger: { title: "Bollinger Bands", description: "Bollinger Bands consist of a middle band (a simple moving average) and two outer bands (standard deviations). The bands widen with high volatility and contract with low volatility. Prices are considered high at the upper band and low at the lower band. A 'Squeeze' (contracting bands) often precedes a significant price breakout." },
+        rsi: { title: "Relative Strength Index (RSI)", description: "The RSI is a momentum oscillator that measures the speed and change of price movements, ranging from 0 to 100. A reading above 70 is considered OVERBOUGHT (potential sell signal), while a reading below 30 is considered OVERSOLD (potential buy signal). Divergence, where the RSI moves opposite to the price, can signal an impending trend reversal." },
+        stochastic: { title: "Stochastic Oscillator", description: "The Stochastic Oscillator compares a security's closing price to its price range over a certain period, bounded between 0 and 100. Readings over 80 are considered overbought (potential sell signal), and readings under 20 are considered oversold (potential buy signal). Crossovers of its %K and %D lines also generate signals." },
+        macd: { title: "Moving Average Convergence Divergence (MACD)", description: "MACD is a trend-following momentum indicator showing the relationship between two EMAs. It consists of the MACD line, a signal line, and a histogram. A buy signal occurs when the MACD line crosses above the signal line. A sell signal occurs when it crosses below. It helps identify trend direction and momentum." },
+    },
+    chart_patterns: [
+        { name: "Support and Resistance", description: "Support is a price level where a downtrend can be expected to pause due to a concentration of demand. Resistance is a price level where an uptrend can be expected to pause due to a concentration of supply. These 'zones' represent key psychological levels. A break of resistance can become new support, and vice-versa.", type: 'zone'},
+        { name: "Trend Lines and Channels", description: "Trend lines connect significant highs or lows to indicate the prevailing direction. Channels are formed by two parallel trend lines. Price often moves within these channels, bouncing between boundaries. A break out of a channel can signal a significant price move, indicating a potential buy (break above resistance) or sell (break below support) opportunity.", type: 'trend_channel'},
+        { name: "Breakout and Consolidation", description: "Consolidation is a period where a price trades within a defined range (like between support and resistance). A breakout occurs when the price moves decisively outside this range, usually with increased volume. Trading breakouts aims to capitalize on the start of a new trend.", type: 'breakout'}
+    ],
+    strategies: {
+        buy: [
+            { name: "Breakout Strategy", signal: "Buy when price breaks decisively above a resistance level, ideally with increased volume. Place stop-loss below the broken resistance (now support)." },
+            { name: "Trend Following (Golden Cross)", signal: "Use 50-period Exponential Moving Average (EMA) and 200-period EMA. Buy when the 50 EMA crosses above the 200 EMA (Golden Cross). Place stop-loss below the 200 EMA or recent swing low." },
+            { name: "Pullback Buy", signal: "When price is in an uptrend, wait for it to retrace to a key support level or a dynamic moving average (e.g., 21 EMA). Buy when a bullish candlestick (like a Hammer or Bullish Engulfing) forms at this level, confirming a bounce. Place stop-loss below the support/EMA." },
+            { name: "Bullish Candlestick Reversal", signal: "After a clear downtrend, identify bullish reversal patterns like Hammer, Inverse Hammer, Bullish Engulfing, or Morning Star. Enter a long position on confirmation (e.g., the next candle closes bullishly). Place stop-loss below the low of the pattern." },
+            { name: "Support Bounce", signal: "Identify a strong support zone. When price touches this zone and forms a bullish candlestick pattern, buy. Place stop-loss just below the support zone." }
+        ],
+        sell: [
+            { name: "Breakdown Strategy", signal: "Sell (or go short) when price breaks decisively below a support level, ideally with increased volume. Place stop-loss above the broken support (now resistance)." },
+            { name: "Trend Reversal (Death Cross)", signal: "Use 50-period EMA and 200-period EMA. Sell (or go short) when the 50 EMA crosses below the 200 EMA (Death Cross). Place stop-loss above the 200 EMA or recent swing high." },
+            { name: "Resistance Rejection", signal: "Identify a strong resistance zone. When price touches this zone and forms a bearish candlestick pattern (e.g., Shooting Star, Bearish Engulfing, Evening Star), sell (or go short). Place stop-loss just above the resistance zone." },
+            { name: "Trailing Stop Sell", signal: "For existing long positions, use a trailing stop based on a shorter moving average (e.g., 10-period or 20-period EMA). Sell (exit long) if a candle closes decisively below this trailing EMA." },
+            { name: "Overbought Indicator + Bearish Candle", signal: "When an oscillator like RSI is above 70 (overbought) AND a bearish candlestick pattern (e.g., Bearish Engulfing, Shooting Star) forms, consider selling (or going short). Place stop-loss above the high of the bearish pattern." }
+        ]
+    },
+    summary: [
+        { situation: "Price falling, Hammer candle appears", strategy: "Reversal Signal", action: "Buy. Stop-loss below Hammer low." },
+        { situation: "Price rising, Shooting Star appears", strategy: "Exhaustion Signal", action: "Sell. Stop-loss above Shooting Star high." },
+        { situation: "Price breaks resistance with volume", strategy: "Breakout", action: "Buy. Stop-loss below broken resistance." },
+        { situation: "RSI > 70 + Bearish Engulfing", strategy: "Overbought Confluence", action: "Sell. Stop-loss above Bearish Engulfing high." },
+        { situation: "Price retraces to 61.8% Fib Level + support", strategy: "Confluence Zone", action: "Buy. Stop-loss below support/Fib level." }
+    ],
+    pro_tip: "Combine 2–3 confirmations: Example — RSI < 30 + Hammer + Support Zone = High Probability Buy"
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Initial data population
+    const populateFoundations = () => {
+        document.getElementById('foundations-what-is-trading').textContent = data.foundations.what_is_trading;
+        const marketList = document.getElementById('foundations-market-types');
+        data.foundations.market_types.forEach(item => {
+            const li = document.createElement('li');
+            li.innerHTML = item;
+            marketList.appendChild(li);
+        });
+        const orderList = document.getElementById('foundations-order-types');
+        data.foundations.order_types.forEach(item => {
+            const li = document.createElement('li');
+            li.innerHTML = item;
+            orderList.appendChild(li);
+        });
+
+        const groundworkContainer = document.getElementById('foundations-groundwork');
+        data.foundations.groundwork.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'p-4 border border-slate-200 rounded-lg';
+            div.innerHTML = `<h4 class="font-semibold text-slate-800">${item.title}</h4><p class="text-slate-600">${item.content}</p>`;
+            groundworkContainer.appendChild(div);
+        });
+    };
+
+    const populateCandlesticks = () => {
+        const grid = document.getElementById('candlestick-grid');
+        grid.innerHTML = '';
+        const filteredData = currentCandleFilter === 'all' 
+            ? data.candlesticks 
+            : data.candlesticks.filter(c => c.type === currentCandleFilter);
+
+        filteredData.forEach(candle => {
+            const card = document.createElement('div');
+            card.className = `candle-card p-4 bg-white rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-300 border-l-4 ${candle.type === 'bullish' ? 'border-green-500' : (candle.type === 'bearish' ? 'border-red-500' : 'border-blue-500')}`;
+            card.dataset.name = candle.name;
+            card.innerHTML = `<h3 class="font-bold text-lg text-slate-900">${candle.name}</h3>`;
+            grid.appendChild(card);
+        });
+        
+        document.querySelectorAll('.candle-card').forEach(card => {
+            card.addEventListener('click', (e) => showCandleDetail(e.currentTarget.dataset.name));
+        });
+    };
+    
+    const showCandleDetail = (name) => {
+        const candleData = data.candlesticks.find(c => c.name === name);
+        if (!candleData) return;
+
+        document.querySelectorAll('.candle-card').forEach(c => c.classList.remove('ring-2', 'ring-blue-500'));
+        document.querySelector(`.candle-card[data-name="${name}"]`).classList.add('ring-2', 'ring-blue-500');
+
+        let detailHTML = `
+            <div class="p-6 bg-white rounded-lg shadow-lg">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="w-full md:w-1/3 flex justify-center items-center">
+                        ${createCandleVisual(candleData.name)}
+                    </div>
+                    <div class="w-full md:w-2/3">
+                        <h3 class="text-2xl font-bold mb-3 ${candleData.type === 'bullish' ? 'text-green-600' : (candleData.type === 'bearish' ? 'text-red-600' : 'text-blue-600')}">${candleData.name}</h3>
+                        <div class="space-y-3 text-slate-700">
+                            <p><strong>Formation:</strong> ${candleData.formation}</p>
+                            <p><strong>Interpretation:</strong> ${candleData.interpretation}</p>
+                            <p><strong>Signal:</strong> ${candleData.signal}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        const firstCard = document.querySelector('#candlestick-grid .candle-card');
+        let detailContainer = document.getElementById('candle-detail-container');
+        if (!detailContainer) {
+            detailContainer = document.createElement('div');
+            detailContainer.id = 'candle-detail-container';
+            detailContainer.className = 'col-span-1 md:col-span-2 lg:col-span-3 mt-4';
+            document.getElementById('candlestick-grid').prepend(detailContainer);
+        }
+        detailContainer.innerHTML = detailHTML;
+    };
+
+    const createCandleVisual = (name) => {
+        let visual = '';
+        switch(name) {
+            case 'Hammer':
+                visual = `<div class="candle-body bg-green-500" style="height: 25px; margin-top: 10px;"><div class="candle-wick" style="height: 60px; top: 25px;"></div></div>`;
+                break;
+            case 'Inverse Hammer':
+                visual = `<div class="candle-body bg-green-500" style="height: 25px; margin-bottom: 10px;"><div class="candle-wick" style="height: 60px; bottom: 25px;"></div></div>`;
+                break;
+            case 'Bullish Engulfing':
+                visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-red-500" style="height: 40px;"><div class="candle-wick" style="top: -5px; height: 10px;"></div><div class="candle-wick" style="top: 40px; height: 10px;"></div></div>
+                            <div class="candle-body bg-green-500" style="height: 80px;"><div class="candle-wick" style="top: -5px; height: 10px;"></div><div class="candle-wick" style="top: 80px; height: 10px;"></div></div>
+                          </div>`;
+                break;
+            case 'Piercing Line':
+                visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-red-500" style="height: 60px;"></div>
+                            <div class="candle-body bg-green-500" style="height: 70px; margin-left: -10px; margin-bottom: -30px;"><div class="candle-wick" style="top: -5px; height: 10px;"></div><div class="candle-wick" style="top: 70px; height: 10px;"></div></div>
+                          </div>`;
+                break;
+            case 'Morning Star':
+                visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-red-500" style="height: 80px;"></div>
+                            <div class="candle-body bg-gray-400" style="height: 10px; margin-bottom: -15px;"><div class="candle-wick" style="top: -10px; height: 10px;"></div><div class="candle-wick" style="top: 10px; height: 10px;"></div></div>
+                            <div class="candle-body bg-green-500" style="height: 80px;"></div>
+                          </div>`;
+                break;
+            case 'Three White Soldiers':
+                 visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-green-500" style="height: 40px;"></div>
+                            <div class="candle-body bg-green-500" style="height: 60px;"></div>
+                            <div class="candle-body bg-green-500" style="height: 80px;"></div>
+                          </div>`;
+                break;
+            case 'Hanging Man':
+                 visual = `<div class="candle-body bg-red-500" style="height: 25px; margin-top: 10px;"><div class="candle-wick" style="height: 60px; top: 25px;"></div></div>`;
+                break;
+            case 'Shooting Star':
+                visual = `<div class="candle-body bg-red-500" style="height: 25px; margin-bottom: 10px;"><div class="candle-wick" style="height: 60px; bottom: 25px;"></div></div>`;
+                break;
+            case 'Bearish Engulfing':
+                 visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-green-500" style="height: 40px;"><div class="candle-wick" style="top: -5px; height: 10px;"></div><div class="candle-wick" style="top: 40px; height: 10px;"></div></div>
+                            <div class="candle-body bg-red-500" style="height: 80px;"><div class="candle-wick" style="top: -5px; height: 10px;"></div><div class="candle-wick" style="top: 80px; height: 10px;"></div></div>
+                          </div>`;
+                break;
+            case 'Dark Cloud Cover':
+                visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-green-500" style="height: 60px;"></div>
+                            <div class="candle-body bg-red-500" style="height: 70px; margin-left: -10px; margin-bottom: 30px;"><div class="candle-wick" style="top: -5px; height: 10px;"></div><div class="candle-wick" style="top: 70px; height: 10px;"></div></div>
+                          </div>`;
+                break;
+            case 'Tweezer Tops':
+                visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-green-500" style="height: 30px;"><div class="candle-wick" style="top: -30px; height: 30px;"></div></div>
+                            <div class="candle-body bg-red-500" style="height: 30px;"><div class="candle-wick" style="top: -30px; height: 30px;"></div></div>
+                          </div>`;
+                break;
+            case 'Evening Star':
+                 visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-green-500" style="height: 80px;"></div>
+                            <div class="candle-body bg-gray-400" style="height: 10px; margin-bottom: 70px;"><div class="candle-wick" style="top: -10px; height: 10px;"></div><div class="candle-wick" style="top: 10px; height: 10px;"></div></div>
+                            <div class="candle-body bg-red-500" style="height: 80px;"></div>
+                          </div>`;
+                break;
+            case 'Three Black Crows':
+                 visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-red-500" style="height: 80px;"></div>
+                            <div class="candle-body bg-red-500" style="height: 60px;"></div>
+                            <div class="candle-body bg-red-500" style="height: 40px;"></div>
+                          </div>`;
+                break;
+            case 'Doji':
+                visual = `<div class="candle-body bg-gray-400" style="height: 5px; margin-top: 20px;"><div class="candle-wick" style="height: 40px; top: -17.5px;"></div></div>`;
+                break;
+            case 'Spinning Top':
+                visual = `<div class="candle-body bg-blue-400" style="height: 20px; margin-top: 10px;"><div class="candle-wick" style="height: 30px; top: -10px;"></div><div class="candle-wick" style="height: 30px; top: 20px;"></div></div>`;
+                break;
+            case 'Inside Bar':
+                visual = `<div class="flex items-end gap-1">
+                            <div class="candle-body bg-green-500" style="height: 80px;"></div>
+                            <div class="candle-body bg-blue-400" style="height: 40px; margin-left: -20px; margin-bottom: 20px;"></div>
+                          </div>`;
+                break;
+            case 'Flags & Pennants':
+                visual = `<div class="h-48 border border-slate-200 rounded p-2 relative">
+                            <div class="absolute top-8 left-4 w-16 h-16 border-2 border-blue-500 rotate-45 origin-top-left"></div>
+                            <span class="absolute top-2 left-2 text-sm text-blue-500">Flag</span>
+                            <div class="absolute bottom-8 right-4 w-16 h-16 border-2 border-green-500 transform rotate-45 origin-bottom-right scale-x-[-1]"></div>
+                            <span class="absolute bottom-2 right-2 text-sm text-green-500">Pennant</span>
+                          </div>`;
+                break;
+            default:
+                visual = '<p>Visual not available</p>';
+        }
+        return `<div class="flex justify-center items-center h-40">${visual}</div>`;
+    };
+
+    const populateChartPatterns = () => {
+        const grid = document.getElementById('chart-patterns-grid');
+        grid.innerHTML = ''; // Clear existing patterns
+        data.chart_patterns.forEach(pattern => {
+            const div = document.createElement('div');
+            div.className = 'bg-white p-6 rounded-lg shadow-sm';
+            let visual = '';
+            if (pattern.type === 'zone') {
+                visual = `
+                <div class="h-48 border border-slate-200 rounded p-2 relative">
+                    <div class="absolute top-4 left-0 right-0 h-px bg-red-400 border-dashed"></div>
+                    <span class="absolute top-1 left-2 text-sm text-red-500">Resistance</span>
+                    <div class="absolute bottom-12 left-0 right-0 h-px bg-green-400 border-dashed"></div>
+                    <span class="absolute bottom-8 left-2 text-sm text-green-500">Support</span>
+                    <div class="absolute left-8 bottom-16 w-16 h-8 border-2 border-blue-500 rounded-bl-full"></div>
+                    <div class="absolute left-24 top-5 w-16 h-8 border-2 border-blue-500 rounded-tr-full transform scale-y-[-1]"></div>
+                     <div class="absolute left-40 bottom-16 w-16 h-8 border-2 border-blue-500 rounded-bl-full"></div>
+                </div>`;
+            } else if (pattern.type === 'breakout') {
+                visual = `
+                <div class="h-48 border border-slate-200 rounded p-2 relative">
+                    <div class="absolute top-8 left-2 right-2 h-px bg-slate-400 border-dashed"></div>
+                    <div class="absolute bottom-8 left-2 right-2 h-px bg-slate-400 border-dashed"></div>
+                    <div class="absolute left-4 top-12 w-24 h-12 border-2 border-blue-500 rounded-lg"></div>
+                    <div class="absolute left-28 top-8 w-px h-8 bg-green-500"></div>
+                    <div class="absolute left-28 top-0 text-green-500 text-3xl">&uarr;</div>
+                    <span class="absolute left-4 bottom-2 text-sm text-slate-500">Consolidation</span>
+                    <span class="absolute left-32 top-8 text-sm text-green-500">Breakout</span>
+                </div>`;
+            } else if (pattern.type === 'trend_channel') {
+                visual = `
+                <div class="h-48 border border-slate-200 rounded p-2 relative">
+                    <div class="absolute top-10 left-4 w-40 h-px bg-blue-500 rotate-12 origin-top-left"></div>
+                    <div class="absolute top-20 left-4 w-40 h-px bg-blue-500 rotate-12 origin-top-left"></div>
+                    <span class="absolute top-5 left-20 text-sm text-blue-500">Uptrend Channel</span>
+                    <div class="absolute bottom-10 right-4 w-40 h-px bg-red-500 -rotate-12 origin-bottom-right"></div>
+                    <div class="absolute bottom-20 right-4 w-40 h-px bg-red-500 -rotate-12 origin-bottom-right"></div>
+                    <span class="absolute bottom-15 right-20 text-sm text-red-500">Downtrend Channel</span>
+                </div>`;
+            }
+
+            div.innerHTML = `
+                <h3 class="text-2xl font-bold text-slate-900 mb-4">${pattern.name}</h3>
+                ${visual}
+                <p class="text-slate-700 mt-4 leading-relaxed">${pattern.description}</p>
+            `;
+            grid.appendChild(div);
+        });
+    };
+
+    const populateStrategies = () => {
+        const buyAccordion = document.getElementById('buy-strategies-accordion');
+        buyAccordion.innerHTML = '';
+        data.strategies.buy.forEach(strategy => {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-lg shadow-sm overflow-hidden border border-green-200';
+            div.innerHTML = `
+                <button class="w-full text-left p-4 flex justify-between items-center hover:bg-green-50 transition">
+                    <h4 class="font-semibold text-green-800">${strategy.name}</h4>
+                    <span class="transform transition-transform text-green-500 text-xl">&plus;</span>
+                </button>
+                <div class="px-4 pb-4 hidden">
+                    <p class="text-slate-700 leading-relaxed">${strategy.signal}</p>
+                </div>
+            `;
+            buyAccordion.appendChild(div);
+        });
+
+        const sellAccordion = document.getElementById('sell-strategies-accordion');
+        sellAccordion.innerHTML = '';
+        data.strategies.sell.forEach(strategy => {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-lg shadow-sm overflow-hidden border border-red-200';
+            div.innerHTML = `
+                <button class="w-full text-left p-4 flex justify-between items-center hover:bg-red-50 transition">
+                    <h4 class="font-semibold text-red-800">${strategy.name}</h4>
+                    <span class="transform transition-transform text-red-500 text-xl">&plus;</span>
+                </button>
+                <div class="px-4 pb-4 hidden">
+                    <p class="text-slate-700 leading-relaxed">${strategy.signal}</p>
+                </div>
+            `;
+            sellAccordion.appendChild(div);
+        });
+
+        // Add event listeners for new accordions
+        document.querySelectorAll('#buy-strategies-accordion button, #sell-strategies-accordion button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('span');
+                const isOpen = !content.classList.contains('hidden');
+
+                if (isOpen) {
+                    content.classList.add('hidden');
+                    icon.innerHTML = '&plus;';
+                    icon.classList.remove('rotate-45');
+                } else {
+                    content.classList.remove('hidden');
+                    icon.innerHTML = '&plus;';
+                     icon.classList.add('rotate-45');
+                }
+            });
+        });
+
+        const summaryTableBody = document.getElementById('summary-table-body');
+        summaryTableBody.innerHTML = '';
+        data.summary.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50';
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">${row.situation}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">${row.strategy}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">${row.action}</td>
+            `;
+            summaryTableBody.appendChild(tr);
+        });
+
+        document.getElementById('pro-tip').textContent = data.pro_tip;
+    };
+    
+    const populateFundamental = () => {
+        const accordion = document.getElementById('fundamental-accordion');
+        accordion.innerHTML = ''; // Clear existing
+        // Add a check to ensure data.fundamental is defined and is an array before iterating
+        if (data.fundamental && Array.isArray(data.fundamental)) {
+            data.fundamental.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'bg-white rounded-lg shadow-sm overflow-hidden';
+                div.innerHTML = `
+                    <button class="w-full text-left p-6 flex justify-between items-center hover:bg-slate-50 transition">
+                        <h3 class="text-xl font-bold text-slate-900">${item.title}</h3>
+                        <span class="transform transition-transform text-blue-500 text-2xl">&plus;</span>
+                    </button>
+                    <div class="px-6 pb-6 hidden">
+                        <p class="text-slate-700 leading-relaxed">${item.content}</p>
+                    </div>
+                `;
+                accordion.appendChild(div);
+            });
+        } else {
+            console.error("data.fundamental is undefined or not an array, cannot populate fundamental section.");
+        }
+
+        accordion.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('span');
+                const isOpen = !content.classList.contains('hidden');
+
+                if (isOpen) {
+                    content.classList.add('hidden');
+                    icon.innerHTML = '&plus;';
+                    icon.classList.remove('rotate-45');
+                } else {
+                    content.classList.remove('hidden');
+                    icon.innerHTML = '&plus;';
+                     icon.classList.add('rotate-45');
+                }
+            });
+        });
+    };
+    
+    // Chart.js implementation
+    let mainChart, oscillatorChart;
+    const indicatorState = { ema_cross: false, bollinger: false, rsi: false, stochastic: false, macd: false };
+    const chartData = {
+        labels: Array.from({length: 50}, (_, i) => `Day ${i + 1}`),
+        prices: [100, 102, 105, 103, 106, 108, 112, 110, 109, 113, 115, 118, 117, 120, 122, 121, 123, 125, 128, 130, 127, 129, 132, 135, 133, 131, 134, 137, 140, 138, 142, 145, 143, 141, 144, 147, 150, 148, 146, 149, 152, 155, 153, 151, 148, 145, 147, 150, 153, 151]
+    };
+    
+    const calculateEMA = (data, period) => {
+        const k = 2 / (period + 1);
+        let emaArray = [data[0]];
+        for (let i = 1; i < data.length; i++) {
+            emaArray.push(data[i] * k + emaArray[i - 1] * (1 - k));
+        }
+        return emaArray;
+    };
+    
+    const calculateSMA = (data, period) => {
+        let sma = [];
+        for (let i = 0; i <= data.length - period; i++) {
+            let sum = 0;
+            for (let j = 0; j < period; j++) {
+                sum += data[i+j];
+            }
+            sma.push(sum / period);
+        }
+        return Array(period-1).fill(null).concat(sma);
+    };
+
+    const calculateBollingerBands = (data, period, stdDev) => {
+        let sma = [];
+        let upperBand = [];
+        let lowerBand = [];
+        for(let i = period - 1; i < data.length; i++) {
+            let slice = data.slice(i - period + 1, i + 1);
+            let mean = slice.reduce((a, b) => a + b) / period;
+            let std = Math.sqrt(slice.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / period);
+            sma.push(mean);
+            upperBand.push(mean + stdDev * std);
+            lowerBand.push(mean - stdDev * std);
+        }
+        return {
+            middle: Array(period - 1).fill(null).concat(sma),
+            upper: Array(period - 1).fill(null).concat(upperBand),
+            lower: Array(period - 1).fill(null).concat(lowerBand),
+        };
+    };
+    
+    const calculateRSI = (data, period = 14) => {
+        let gains = [];
+        let losses = [];
+        for (let i = 1; i < data.length; i++) {
+            let diff = data[i] - data[i-1];
+            gains.push(diff > 0 ? diff : 0);
+            losses.push(diff < 0 ? -diff : 0);
+        }
+
+        let avgGain = gains.slice(0, period).reduce((a,b) => a+b, 0) / period;
+        let avgLoss = losses.slice(0, period).reduce((a,b) => a+b, 0) / period;
+        
+        let rsi = [100 - (100 / (1 + (avgGain / avgLoss)))];
+        
+        for (let i = period; i < gains.length; i++) {
+            avgGain = (avgGain * (period - 1) + gains[i]) / period;
+            avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+            if (avgLoss === 0) {
+                rsi.push(100);
+            } else {
+                let rs = avgGain / avgLoss;
+                rsi.push(100 - (100 / (1 + rs)));
+            }
+        }
+        return Array(period).fill(null).concat(rsi);
+    };
+
+    const calculateStochastic = (data, kPeriod = 14, dPeriod = 3) => {
+        const highestHigh = (arr, start, end) => Math.max(...arr.slice(start, end));
+        const lowestLow = (arr, start, end) => Math.min(...arr.slice(start, end));
+
+        let percentK = [];
+        for (let i = kPeriod - 1; i < data.length; i++) {
+            let high = highestHigh(data, i - kPeriod + 1, i + 1);
+            let low = lowestLow(data, i - kPeriod + 1, i + 1);
+            let k = ((data[i] - low) / (high - low)) * 100;
+            percentK.push(k);
+        }
+
+        let percentD = calculateSMA(percentK, dPeriod);
+        
+        return {
+            percentK: Array(kPeriod - 1).fill(null).concat(percentK),
+            percentD: Array(kPeriod - 1 + dPeriod - 1).fill(null).concat(percentD) // Adjust nulls for SMA
+        };
+    };
+    
+    const calculateMACD = (data, shortPeriod = 12, longPeriod = 26, signalPeriod = 9) => {
+        const emaShort = calculateEMA(data, shortPeriod);
+        const emaLong = calculateEMA(data, longPeriod);
+        const macdLine = emaShort.map((val, i) => val - emaLong[i]);
+        const signalLine = calculateEMA(macdLine, signalPeriod);
+        const histogram = macdLine.map((val, i) => val - signalLine[i]);
+        return { macdLine, signalLine, histogram };
+    };
+
+    const createCharts = () => {
+        const ctxMain = document.getElementById('indicatorChart').getContext('2d');
+        mainChart = new Chart(ctxMain, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Price',
+                    data: chartData.prices,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                }
+            }
+        });
+
+        const ctxOscillator = document.getElementById('oscillatorChart').getContext('2d');
+        oscillatorChart = new Chart(ctxOscillator, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false }
+                },
+                plugins: {
+                    legend: { display: true }
+                }
+            }
+        });
+    };
+    
+    const updateChart = () => {
+        const priceDataset = mainChart.data.datasets[0];
+        mainChart.data.datasets = [priceDataset];
+        
+        oscillatorChart.data.datasets = [];
+        document.getElementById('oscillator-container').style.display = 'none';
+
+        if (indicatorState.ema_cross) {
+            const ema9 = calculateEMA(chartData.prices, 9);
+            const ema21 = calculateEMA(chartData.prices, 21);
+            mainChart.data.datasets.push({ label: 'EMA 9', data: ema9, borderColor: 'rgb(234, 179, 8)', borderWidth: 1.5, pointRadius: 0 });
+            mainChart.data.datasets.push({ label: 'EMA 21', data: ema21, borderColor: 'rgb(192, 38, 211)', borderWidth: 1.5, pointRadius: 0 });
+        }
+        if (indicatorState.bollinger) {
+            const bands = calculateBollingerBands(chartData.prices, 20, 2);
+            mainChart.data.datasets.push({ label: 'Upper Band', data: bands.upper, borderColor: 'rgba(107, 114, 128, 0.5)', borderWidth: 1, pointRadius: 0, fill: '+1' });
+            mainChart.data.datasets.push({ label: 'Middle Band', data: bands.middle, borderColor: 'rgba(107, 114, 128, 0.8)', borderDash: [5,5], borderWidth: 1, pointRadius: 0, fill: false });
+            mainChart.data.datasets.push({ label: 'Lower Band', data: bands.lower, borderColor: 'rgba(107, 114, 128, 0.5)', borderWidth: 1, pointRadius: 0, fill: false });
+        }
+        
+        let oscillatorActive = false;
+        if (indicatorState.rsi) {
+            oscillatorActive = true;
+            const rsiData = calculateRSI(chartData.prices, 14);
+            oscillatorChart.data.datasets.push({ label: 'RSI', data: rsiData, borderColor: 'rgb(74, 222, 128)', borderWidth: 1.5, pointRadius: 0 });
+            oscillatorChart.options.scales.y = { min: 0, max: 100 };
+            oscillatorChart.data.datasets.push({ label: 'Overbought (70)', data: Array(chartData.labels.length).fill(70), borderColor: 'rgba(255, 99, 132, 0.5)', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false });
+            oscillatorChart.data.datasets.push({ label: 'Oversold (30)', data: Array(chartData.labels.length).fill(30), borderColor: 'rgba(54, 162, 235, 0.5)', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false });
+        }
+        if (indicatorState.stochastic) {
+            oscillatorActive = true;
+            const stochasticData = calculateStochastic(chartData.prices);
+            oscillatorChart.data.datasets.push({ label: '%K', data: stochasticData.percentK, borderColor: 'rgb(255, 159, 64)', borderWidth: 1.5, pointRadius: 0 });
+            oscillatorChart.data.datasets.push({ label: '%D', data: stochasticData.percentD, borderColor: 'rgb(75, 192, 192)', borderWidth: 1.5, pointRadius: 0 });
+            oscillatorChart.options.scales.y = { min: 0, max: 100 };
+            oscillatorChart.data.datasets.push({ label: 'Overbought (80)', data: Array(chartData.labels.length).fill(80), borderColor: 'rgba(255, 99, 132, 0.5)', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false });
+            oscillatorChart.data.datasets.push({ label: 'Oversold (20)', data: Array(chartData.labels.length).fill(20), borderColor: 'rgba(54, 162, 235, 0.5)', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false });
+        }
+        if (indicatorState.macd) {
+            oscillatorActive = true;
+            const macdData = calculateMACD(chartData.prices);
+            oscillatorChart.data.datasets.push({ label: 'MACD Line', data: macdData.macdLine, type: 'line', borderColor: 'rgb(34, 197, 94)', borderWidth: 1.5, pointRadius: 0 });
+            oscillatorChart.data.datasets.push({ label: 'Signal Line', data: macdData.signalLine, type: 'line', borderColor: 'rgb(239, 68, 68)', borderWidth: 1.5, pointRadius: 0 });
+            oscillatorChart.data.datasets.push({ label: 'Histogram', data: macdData.histogram, type: 'bar', backgroundColor: (context) => context.raw >= 0 ? 'rgba(74, 222, 128, 0.5)' : 'rgba(248, 113, 113, 0.5)'});
+            oscillatorChart.options.scales.y = { beginAtZero: false };
+        }
+
+        if (oscillatorActive) {
+            document.getElementById('oscillator-container').style.display = 'block';
+            oscillatorChart.update();
+        }
+        
+        mainChart.update();
+
+        const activeIndicator = Object.keys(indicatorState).find(key => indicatorState[key]);
+        const explanationDiv = document.getElementById('indicator-explanation');
+        if (activeIndicator) {
+            explanationDiv.innerHTML = `<h3 class="text-xl font-bold mb-2 text-slate-900">${data.indicators[activeIndicator].title}</h3><p class="text-slate-700">${data.indicators[activeIndicator].description}</p>`;
+        } else {
+            explanationDiv.innerHTML = '<p class="text-slate-600">Select an indicator to see its explanation.</p>';
+        }
+    };
+    
+    // Navigation
+    const navButtons = document.querySelectorAll('.nav-button');
+    const contentSections = document.querySelectorAll('.content-section');
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.dataset.target;
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            contentSections.forEach(section => {
+                section.id === target ? section.classList.add('active') : section.classList.remove('active');
+            });
+        });
+    });
+
+    // Technical Analysis Sub-navigation
+    const techNavButtons = document.querySelectorAll('.tech-nav-button');
+    const techContentSections = document.querySelectorAll('.tech-content-section');
+    techNavButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.dataset.techTarget + '-content';
+            techNavButtons.forEach(btn => {
+                btn.classList.remove('text-blue-600', 'border-blue-600');
+                btn.classList.add('text-slate-500');
+            });
+            button.classList.add('text-blue-600', 'border-blue-600');
+            button.classList.remove('text-slate-500');
+            techContentSections.forEach(section => {
+                section.id === target ? section.classList.remove('hidden') : section.classList.add('hidden');
+            });
+            if(target === 'indicators-content' && !mainChart) {
+                createCharts();
+            } else if (target === 'strategies-content') {
+                populateStrategies(); // Populate strategies when tab is clicked
+            }
+        });
+    });
+    
+    // Candlestick Filter
+    let currentCandleFilter = 'all';
+    const filterButtons = document.querySelectorAll('.candle-filter-btn');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            currentCandleFilter = button.dataset.filter;
+            filterButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-500', 'text-white');
+                btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-300');
+            });
+            button.classList.add('bg-blue-500', 'text-white');
+            button.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-300');
+            
+            let detailContainer = document.getElementById('candle-detail-container');
+            if(detailContainer) detailContainer.innerHTML = '';
+            
+            populateCandlesticks();
+        });
+    });
+
+    // Indicator Buttons
+    const indicatorButtons = document.querySelectorAll('.indicator-button');
+    indicatorButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const indicator = button.dataset.indicator;
+            
+            // Allow only one to be active
+            Object.keys(indicatorState).forEach(key => {
+                indicatorState[key] = key === indicator ? !indicatorState[key] : false;
+            });
+
+            indicatorButtons.forEach(btn => btn.classList.remove('active'));
+            if (indicatorState[indicator]) {
+                button.classList.add('active');
+            }
+            
+            updateChart();
+        });
+    });
+
+    // Feedback Modal Logic
+    const feedbackButton = document.getElementById('feedback-button');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const closeFeedbackModal = document.getElementById('close-feedback-modal');
+    const submitFeedbackButton = document.getElementById('submit-feedback');
+    const feedbackTextarea = document.getElementById('feedback-text');
+
+    feedbackButton.addEventListener('click', () => {
+        feedbackModal.style.display = 'flex'; // Use flex to center
+    });
+
+    closeFeedbackModal.addEventListener('click', () => {
+        feedbackModal.style.display = 'none';
+    });
+
+    // Close modal if clicked outside content
+    window.addEventListener('click', (event) => {
+        if (event.target === feedbackModal) {
+            feedbackModal.style.display = 'none';
+        }
+    });
+
+    submitFeedbackButton.addEventListener('click', async () => {
+        const review = feedbackTextarea.value;
+        if (review.trim() !== '') {
+            // Simulate sending feedback to a backend
+            try {
+                // In a real application, you would send this data to your backend server
+                // const response = await fetch('/api/submit-feedback', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ feedback: review, userId: window.currentUserId })
+                // });
+                // const result = await response.json();
+                // console.log("Backend response for feedback:", result);
+
+                console.log("User Feedback (simulated to backend):", review);
+                console.log("Note: This feedback would be stored in PostgreSQL via a backend server. Direct email sending is not possible from the browser.");
+                alert("Thank you for your feedback! (Check console for simulated output)");
+            } catch (error) {
+                console.error("Error submitting feedback (simulated):", error);
+                alert("There was an error submitting your feedback. Please try again later.");
+            } finally {
+                feedbackTextarea.value = ''; // Clear textarea
+                feedbackModal.style.display = 'none';
+            }
+        } else {
+            alert("Please enter your feedback before submitting.");
+        }
+    });
+
+    // Initial population
+    populateFoundations();
+    populateCandlesticks();
+    populateChartPatterns();
+    populateFundamental();
+
+    // Set current year in footer
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    // Simulate visitor count for demonstration purposes (requires backend for persistence)
+    let currentVisitorCount = parseInt(localStorage.getItem('localVisitorCount') || '0') + 1;
+    localStorage.setItem('localVisitorCount', currentVisitorCount);
+    document.getElementById('visitor-count').textContent = currentVisitorCount;
+
+    // In a real application, you would fetch this from your backend
+    // fetch('/api/visitor-count/increment', { method: 'POST' })
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         document.getElementById('visitor-count').textContent = data.totalVisitors;
+    //     })
+    //     .catch(error => {
+    //         console.error('Error fetching visitor count:', error);
+    //         document.getElementById('visitor-count').textContent = 'Error';
+    //     });
+});
+</script>
+
+</body>
+</html>
